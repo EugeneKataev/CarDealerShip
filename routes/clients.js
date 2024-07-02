@@ -75,8 +75,8 @@ router.get('/:id', (req, res) => {
  *               phone:
  *                 type: string
  *             example:
- *               name: Иванов Иван
- *               phone: +79001234567
+ *               name: Шарапова
+ *               phone: +2482393847
  *     responses:
  *       '201':
  *         description: Клиент успешно создан.
@@ -115,8 +115,8 @@ router.post('/', (req, res) => {
  *               phone:
  *                 type: string
  *             example:
- *               name: Петров Петр
- *               phone: +79001112233
+ *               name: Джокович
+ *               phone: +132424523
  *     responses:
  *       '200':
  *         description: Информация о клиенте успешно обновлена.
@@ -129,7 +129,6 @@ router.put('/:id', (req, res) => {
 
     const index = clients.findIndex(client => client.id === clientId);
     if (index !== -1) {
-        // Обновить свойств
         clients[index].name = updatedClient.name;
         clients[index].phone = updatedClient.phone;
 

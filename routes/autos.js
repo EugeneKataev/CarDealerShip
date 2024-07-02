@@ -76,10 +76,13 @@ router.get('/:id', (req, res) => {
  *                 type: integer
  *               price:
  *                 type: number
+ *               modelType:
+ *                 type: string
  *             example:
  *               brand: BMW
  *               year: 2020
  *               price: 45000
+ *               modelType: BMW X5
  *     responses:
  *       '201':
  *         description: Автомобиль успешно создан.
@@ -118,10 +121,13 @@ router.post('/', (req, res) => {
  *                 type: integer
  *               price:
  *                 type: number
+ *               modelType:
+ *                 type: string
  *             example:
  *               brand: BMW X5
  *               year: 2022
  *               price: 60000
+ *               modelType: SUV
  *     responses:
  *       '200':
  *         description: Информация о автомобиле успешно обновлена.

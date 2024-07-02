@@ -4,6 +4,7 @@ const router = express.Router();
 import autoDeals from '../data/autoDeals.js';
 import clients from '../data/clients.js';
 import autos from '../data/autos.js';
+import orders from "../data/orders.js";
 
 /**
  * @swagger
@@ -63,7 +64,7 @@ router.get('/', (req, res) => {
  *         description: Автосделка успешно создана и автомобиль добавлен к клиенту.
  */
 router.post('/', (req, res) => {
-    const { clientId, autoId, price, date } = req.body;
+    const { clientId, autoId, price, date, modelType, year } = req.body;
 
     // Находим клиента по ID
     const client = clients.find(c => c.id === clientId);
@@ -82,7 +83,13 @@ router.post('/', (req, res) => {
     autoDeals.push(newAutoDeal);
 
     // Добавляем автомобиль к клиенту в его массив autos
-    client.autos.push({ id: auto.id, modelType: auto.modelType });
+    client.autos.push({ id: auto.id, modelType: auto.modelType, year: auto.year });
+
+    newAutoDeal.id = orders.length ? orders[orders.length - 1].id + 1 : 1;
+    newAutoDeal.autoBuy = true;
+    newAutoDeal.modelType = modelType;
+    newAutoDeal.year = year;
+    orders.push(newAutoDeal);
 
     res.status(201).json(newAutoDeal);
 });

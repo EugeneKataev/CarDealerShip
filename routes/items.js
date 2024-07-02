@@ -29,6 +29,41 @@ router.get('/', (req, res) => {
 
 /**
  * @swagger
+ * /api/items/all-models:
+ *   get:
+ *     summary: Получить уникальные модели из свойства compatibleModels всех товаров
+ *     tags:
+ *       - Items
+ *     responses:
+ *       '200':
+ *         description: Успешный запрос. Возвращает массив уникальных моделей.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 example: "Nissan Altima"
+ *                 description: Уникальная модель автомобиля из свойства compatibleModels товаров.
+ */
+router.get('/all-models', (req, res) => {
+    const uniqueModels = [];
+
+    items.forEach(item => {
+        const compatibleModels = item.compatibleModels;
+
+        compatibleModels.forEach(model => {
+            if (!uniqueModels.includes(model)) {
+                uniqueModels.push(model);
+            }
+        });
+    });
+    res.json(uniqueModels);
+
+});
+
+/**
+ * @swagger
  * /api/items/{id}:
  *   get:
  *     summary: Получить информацию о товаре по ID
@@ -74,8 +109,10 @@ router.get('/:id', (req, res) => {
  *                 type: string
  *               description:
  *                 type: string
- *               compatibleMarks:
- *                 type: string
+ *               compatibleModels:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               price:
  *                 type: number
  *               quantity:
@@ -83,7 +120,10 @@ router.get('/:id', (req, res) => {
  *             example:
  *               name: Стекло
  *               description: Описание товара
- *               compatibleMarks: BMW
+ *               compatibleModels:
+ *                 - "Audi A4"
+ *                 - "Mercedes C-Class"
+ *                 - "Volkswagen Golf"
  *               price: 200
  *               quantity: 3
  *     responses:
@@ -122,7 +162,7 @@ router.post('/', (req, res) => {
  *                 type: string
  *               description:
  *                 type: string
- *               compatibleMarks:
+ *               compatibleModels:
  *                 type: string
  *               price:
  *                 type: number
@@ -131,7 +171,9 @@ router.post('/', (req, res) => {
  *             example:
  *               name: Стекло для BMW
  *               description: Описание товара
- *               compatibleMarks: BMW
+ *               compatibleModels:
+ *                 - "Audi A4"
+ *                 - "Nissan G7"
  *               price: 250
  *               quantity: 5
  *     responses:
@@ -180,5 +222,60 @@ router.delete('/:id', (req, res) => {
         res.status(404).send('Item not found');
     }
 });
+
+/**
+ * @swagger
+ * /api/items/models/{model}:
+ *   get:
+ *     summary: Получить список товаров по модели с фильтром по цене
+ *     tags:
+ *       - Items
+ *     parameters:
+ *       - in: path
+ *         name: model
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Модель автомобиля для фильтрации товаров
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Минимальная цена товара (опционально)
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Максимальная цена товара (опционально)
+ *     responses:
+ *       '200':
+ *         description: Успешный запрос. Возвращает список товаров с указанной моделью и соответствующими ценами.
+ *       '404':
+ *         description: Товары не найдены.
+ */
+router.get('/models/:model', (req, res) => {
+    const model = req.params.model.replace(/%20/g, ' ');
+
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : undefined;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined;
+
+    // Фильтруем товары, где указанная модель присутствует в свойстве compatibleModels
+    let filteredItems = items.filter(item =>
+        item.compatibleModels.includes(model)
+    );
+
+    // фильтрацию по цене
+    if (minPrice !== undefined) {
+        filteredItems = filteredItems.filter(item => item.price >= minPrice);
+    }
+    if (maxPrice !== undefined) {
+        filteredItems = filteredItems.filter(item => item.price <= maxPrice);
+    }
+
+    res.json(filteredItems);
+});
+
 
 export default router;

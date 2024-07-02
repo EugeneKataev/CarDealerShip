@@ -7,6 +7,8 @@
 
 import express from 'express';
 import orders from '../data/orders.js';
+import autos from '../data/autos.js';
+import items from '../data/items.js'
 
 const router = express.Router();
 
@@ -74,18 +76,25 @@ router.get('/:id', (req, res) => {
  *                 type: integer
  *               autoId:
  *                 type: integer
- *               itemsId:
+ *               items:
  *                 type: array
  *                 items:
- *                   type: integer
- *               date:
- *                 type: string
- *                 format: date
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
  *             example:
  *               clientId: 1
  *               autoId: 10
- *               itemsId: [22, 31, 13]
- *               date: 2024-06-21
+ *               items:
+ *                 - id: 22
+ *                   quantity: 2
+ *                 - id: 31
+ *                   quantity: 1
+ *                 - id: 13
+ *                   quantity: 3
  *     responses:
  *       '201':
  *         description: Заказ успешно создан.
@@ -93,8 +102,93 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
     const newOrder = req.body;
     newOrder.id = orders.length ? orders[orders.length - 1].id + 1 : 1;
+
+    // Проверка наличия товаров в списке autos
+    const itemsNotFound = [];
+    newOrder.items.forEach(item => {
+        const foundAuto = items.find(obj => obj.id === item.id);
+        if (!foundAuto || item.quantity > foundAuto.quantity) {
+            itemsNotFound.push(item.id);
+        }
+    });
+
+    if (itemsNotFound.length > 0) {
+        return res.status(400).json({ error: `Товары с id ${itemsNotFound.join(', ')} не найдены или их количество недостаточно.` });
+    }
+
+    newOrder.items.forEach(item => {
+        const foundItem = items.find(obj => obj.id === item.id);
+        if (foundItem) {
+            foundItem.quantity -= item.quantity;
+            if (foundItem.quantity === 0) {
+                const index = items.indexOf(foundItem);
+                if (index > -1) {
+                    items.splice(index, 1);
+                }
+            }
+        }
+    });
+
     orders.push(newOrder);
     res.status(201).json(newOrder);
+});
+
+/**
+ * @swagger
+ * /api/orders/client/{clientId}:
+ *   get:
+ *     summary: Получить заказы клиента по его clientId
+ *     tags:
+ *       - Orders
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           format: int64
+ *         description: ID клиента для получения его заказов
+ *     responses:
+ *       '200':
+ *         description: Успешный запрос. Возвращает список заказов клиента.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: Уникальный ID заказа
+ *                   clientId:
+ *                     type: integer
+ *                     description: ID клиента, которому принадлежит заказ
+ *                   autoId:
+ *                     type: integer
+ *                     description: ID автомобиля заказа
+ *                   itemsId:
+ *                     type: array
+ *                     items:
+ *                       type: integer
+ *                     description: Массив ID товаров в заказе
+ *                   date:
+ *                     type: string
+ *                     format: date
+ *                     description: Дата заказа в формате "DD.MM.YYYY"
+ *                   price:
+ *                     type: number
+ *                     format: float
+ *                     description: Цена заказа
+ *       '404':
+ *         description: Заказы не найдены для указанного clientId.
+ */
+router.get('/client/:clientId', (req, res) => {
+    const clientId = parseInt(req.params.clientId);
+
+    const clientOrders = orders.filter(order => order.clientId === clientId);
+
+    res.json(clientOrders);
 });
 
 export default router;
